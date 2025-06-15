@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { ObjectSchema, ClientAdmin } = require('../models'); //  <---- Импортируем ClientAdmin
+const { ObjectSchema, ClientAdmin } = require('../models');
 const { authenticateToken, authorizeRole } = require('../middleware/auth');
 
 // GET /api/objectschemas - Получение списка схем объектов
@@ -20,27 +20,19 @@ router.get('/', authenticateToken, authorizeRole(['superadmin']), async (req, re
 });
 
 // GET /api/objectschemas/:id - Получение схемы объекта по ID
-router.get('/', authenticateToken, authorizeRole(['superadmin', 'clientadmin']), async (req, res) => {
+router.get('/:id', authenticateToken, authorizeRole(['superadmin', 'clientadmin']), async (req, res) => {
     try {
-        const { role, userId, clientAdminId } = req.user;
+        const { id } = req.params;
+        const objectSchema = await ObjectSchema.findByPk(id);
 
-        let whereClause = {};
-
-        if (role === 'clientadmin') {
-            whereClause.clientAdminId = clientAdminId;
+        if (!objectSchema) {
+            return res.status(404).json({ message: 'Object schema not found' });
         }
 
-        const objectSchemas = await ObjectSchema.findAll({
-            where: whereClause,
-            include: [{
-                model: ClientAdmin,
-                as: 'ClientAdmin'
-            }]
-        }); // Получаем схемы объектов с информацией о ClientAdmin
-        res.json(objectSchemas);
+        res.json(objectSchema);
     } catch (error) {
-        console.error('Error getting object schemas:', error);
-        res.status(500).json({ message: 'Error getting object schemas' });
+        console.error('Error getting object schema:', error);
+        res.status(500).json({ message: 'Error getting object schema' });
     }
 });
 

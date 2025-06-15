@@ -7,8 +7,9 @@ const ObjectItemForm = () => {
     const [data, setData] = useState({});
     const [error, setError] = useState('');
     const navigate = useNavigate();
-    const { id } = useParams(); // Get object item ID from URL params
+    const { id } = useParams();  // Get object item ID from URL params
     const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role'); // get role from localStorage
     const location = useLocation();
 
     useEffect(() => {
@@ -29,33 +30,17 @@ const ObjectItemForm = () => {
             }
         };
 
-        if (id) {
-            // If ID is present, fetch existing object item
-            const fetchObjectItem = async () => {
-                try {
-                    const response = await axios.get(`http://localhost:5000/api/objectitems/${id}`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                    });
-                    const item = response.data;
-                    setData(item.data);
-                    fetchObjectSchema(item.objectSchemaId);
-                } catch (error) {
-                    console.error('Error fetching object item:', error.response ? error.response.data : error.message);
-                    setError(error.response ? error.response.data : error.message);
-                }
-            };
-            fetchObjectItem();
+        // Get schemaId from URL query params
+        const searchParams = new URLSearchParams(location.search);
+        const schemaId = searchParams.get('schemaId');
+
+        if (schemaId) {
+            fetchObjectSchema(schemaId);
         } else {
-            // If no ID is present, get schemaId from query params
-            const searchParams = new URLSearchParams(location.search);
-            const schemaId = searchParams.get('schemaId');
-            if (schemaId) {
-                fetchObjectSchema(schemaId);
-            } else {
-                setError('Schema ID is required to create a new object item.');
-            }
+            setError('Schema ID is required to create a new object item.');
         }
-    }, [id, token, location.search]);
+
+    }, [location.search, token, schemaId]);  // Dependency on location.search, token & schemaId
 
     const handleChange = (e) => {
         setData({ ...data, [e.target.name]: e.target.value });
@@ -77,26 +62,32 @@ const ObjectItemForm = () => {
             if (id) {
                 // Update existing object item
                 await axios.put(`http://localhost:5000/api/objectitems/${id}`, payload, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'x-user-role': role // Add role to headers
+                    },
                 });
             } else {
                 // Create new object item
                 await axios.post('http://localhost:5000/api/objectitems', payload, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'x-user-role': role // Add role to headers
+                    },
                 });
             }
             navigate('/objectitems');
         } catch (error) {
             console.error('Error submitting object item:', error.response ? error.response.data : error.message);
-            setError(error.response ? error.response.data : error.message);
+            setError(error.response ? error.response.data.message : error.message);
         }
     };
 
     if (!objectSchema) {
         return (
             <div className="container mx-auto p-4">
-                {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-                {/*  Loader or message */}
+                {error && <p className="text-red-500 text-sm mb-4">{error.message}</p>}
+                {/* Loader or message */}
                 Loading...
             </div>
         );
@@ -105,14 +96,14 @@ const ObjectItemForm = () => {
     return (
         <div className="container mx-auto p-4">
             <h2 className="text-2xl font-semibold mb-4 text-gray-800">{id ? 'Edit Object Item' : 'Create Object Item'}</h2>
-            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+            {error && <p className="text-red-500 text-sm mb-4">{error.message}</p>}
 
             <form onSubmit={handleSubmit}>
                 {objectSchema.fields.map((field) => (
                     <div className="mb-4" key={field.name}>
                         <label htmlFor={field.name} className="block text-gray-700 text-sm font-bold mb-2">{field.name}:</label>
                         <input
-                            type="text" //  TODO:  Diferent types
+                            type="text"   // TODO: Different types
                             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                             id={field.name}
                             name={field.name}

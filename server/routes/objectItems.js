@@ -3,7 +3,7 @@ const router = express.Router();
 const { ObjectItem, ObjectSchema, ClientAdmin, User } = require('../models');
 const { authenticateToken, authorizeRole } = require('../middleware/auth');
 
-// GET /api/objectitems/:id - Получение элемента объекта по ID
+// GET /api/objectitems/:id
 router.get('/:id', authenticateToken, authorizeRole(['superadmin', 'clientadmin']), async (req, res) => {
     try {
         const { id } = req.params;
@@ -18,16 +18,16 @@ router.get('/:id', authenticateToken, authorizeRole(['superadmin', 'clientadmin'
     }
 });
 
-// GET /api/objectitems - Получение списка элементов объектов
+// GET /api/objectitems
 router.get('/', authenticateToken, authorizeRole(['superadmin', 'clientadmin', 'operator']), async (req, res) => {
     try {
-        const { schemaId } = req.query; // Получаем schemaId из query parameters
+        const { schemaId } = req.query;
         const { role, userId, clientAdminId } = req.user;
 
         let whereClause = {};
 
         if (schemaId) {
-            whereClause.objectSchemaId = schemaId; // Добавляем фильтрацию по schemaId, если он указан
+            whereClause.objectSchemaId = schemaId;
         }
 
         if (role === 'clientadmin') {
@@ -41,7 +41,7 @@ router.get('/', authenticateToken, authorizeRole(['superadmin', 'clientadmin', '
         }
 
         const objectItems = await ObjectItem.findAll({
-            where: whereClause, // Используем whereClause для фильтрации
+            where: whereClause,
             include: [
                 { model: ObjectSchema, as: 'ObjectSchema' },
                 { model: ClientAdmin, as: 'ClientAdmin' }
@@ -70,11 +70,10 @@ router.post('/', authenticateToken, authorizeRole(['clientadmin', 'operator']), 
             return res.status(400).json({ message: 'Invalid objectSchemaId' });
         }
 
-        // TODO: Validate object data against schema
-        // const validationResult = validateObjectData(data, objectSchema.fields);
-        // if (!validationResult.isValid) {
-        //     return res.status(400).json({ message: validationResult.message });
-        // }
+        // Basic Validation
+        if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
+            return res.status(400).json({ message: 'Invalid data. Data must be a non-empty object.' });
+        }
 
         const newObjectItem = await ObjectItem.create({
             objectSchemaId,

@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 const ObjectSchemaList = () => {
     const [objectSchemas, setObjectSchemas] = useState([]);
     const [error, setError] = useState('');
     const token = localStorage.getItem('token');
-    const navigate = useNavigate();
 
     useEffect(() => {
         if (!token) {
-            navigate('/login');
+            window.location.href = '/login';
             return;
         }
 
@@ -27,7 +26,7 @@ const ObjectSchemaList = () => {
         };
 
         fetchObjectSchemas();
-    }, [token, navigate]);
+    }, [token]);
 
     const handleDeleteSchema = async (id) => {
         try {
@@ -56,24 +55,16 @@ const ObjectSchemaList = () => {
                         <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
                             <th className="py-3 px-6 text-left">Name</th>
                             <th className="py-3 px-6 text-left">Description</th>
-                            <th className="py-3 px-6 text-left">Client Admin</th> {/* Новая колонка */}
+                            <th className="py-3 px-6 text-left">Client Admin</th>
                             <th className="py-3 px-6 text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="text-gray-600 text-sm font-light">
                         {objectSchemas.map((schema) => (
                             <tr key={schema.id} className="border-b border-gray-200 hover:bg-gray-100">
-                                <td className="py-3 px-6 text-left whitespace-nowrap">
-                                    <div className="flex items-center">
-                                        <span>{schema.name}</span>
-                                    </div>
-                                </td>
-                                <td className="py-3 px-6 text-left">
-                                    {schema.description}
-                                </td>
-                                <td className="py-3 px-6 text-left"> {/* Новая колонка */}
-                                    {schema.ClientAdmin ? schema.ClientAdmin.name : 'No Client Admin'}
-                                </td>
+                                <td className="py-3 px-6 text-left whitespace-nowrap">{schema.name}</td>
+                                <td className="py-3 px-6 text-left">{schema.description}</td>
+                                <td className="py-3 px-6 text-left">{schema.ClientAdmin ? schema.ClientAdmin.name : 'No Client Admin'}</td>
                                 <td className="py-3 px-6 text-center">
                                     <div className="flex item-center justify-center">
                                         <Link to={`/objectschemas/${schema.id}/edit`} className="text-blue-500 hover:text-blue-700 mr-2">

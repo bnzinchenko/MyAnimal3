@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 const ObjectItemList = () => {
     const [objectItems, setObjectItems] = useState([]);
@@ -8,12 +8,11 @@ const ObjectItemList = () => {
     const [selectedSchemaId, setSelectedSchemaId] = useState('');
     const [error, setError] = useState('');
     const token = localStorage.getItem('token');
-    const userRole = localStorage.getItem('role'); // Get user role from local storage
-    const navigate = useNavigate();
+    const userRole = localStorage.getItem('role');
 
     useEffect(() => {
         if (!token) {
-            navigate('/login');
+            window.location.href = '/login';
             return;
         }
 
@@ -45,7 +44,7 @@ const ObjectItemList = () => {
         if (userRole !== 'operator') {
             fetchObjectSchemas();
         }
-    }, [token, selectedSchemaId, userRole, navigate]);
+    }, [token, selectedSchemaId, userRole]);
 
     const handleSchemaChange = (e) => {
         setSelectedSchemaId(e.target.value);
@@ -63,13 +62,20 @@ const ObjectItemList = () => {
         }
     };
 
-    const renderItemData = (data) => {
-        try {
-            return JSON.stringify(data);
-        } catch (e) {
-            console.error("Error stringifying data:", e);
-            return "Invalid Data";
+    const renderItemData = (item) => {
+        if (!item.ObjectSchema || !item.ObjectSchema.fields) {
+            return "Schema or fields not found";
         }
+
+        return (
+            <ul>
+                {item.ObjectSchema.fields.map((field) => (
+                    <li key={field.name}>
+                        <strong>{field.name}:</strong> {item.data[field.name] || 'N/A'}
+                    </li>
+                ))}
+            </ul>
+        );
     };
 
     return (
@@ -77,7 +83,6 @@ const ObjectItemList = () => {
             <h2 className="text-2xl font-semibold mb-4 text-gray-800">Object Items</h2>
             {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
-            {/* Hide schema selection for operators */}
             {userRole !== 'operator' && (
                 <div className="mb-4">
                     <label htmlFor="schema" className="block text-gray-700 text-sm font-bold mb-2">Filter by Schema:</label>
@@ -95,7 +100,7 @@ const ObjectItemList = () => {
                 </div>
             )}
 
-            <Link to={`/objectitems/new?schemaId=${selectedSchemaId}`} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mb-4 inline-block">
+            <Link to={{ pathname: '/objectitems/new', search: `?schemaId=${selectedSchemaId}` }} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mb-4 inline-block">
                 Create New Item
             </Link>
 
@@ -111,9 +116,7 @@ const ObjectItemList = () => {
                         {objectItems.map((item) => (
                             <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-100">
                                 <td className="py-3 px-6 text-left whitespace-nowrap">
-                                    <div className="flex items-center">
-                                        <span>{renderItemData(item.data)}</span>
-                                    </div>
+                                    {renderItemData(item)}
                                 </td>
                                 <td className="py-3 px-6 text-center">
                                     <div className="flex item-center justify-center">
